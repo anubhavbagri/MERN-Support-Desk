@@ -2,7 +2,12 @@
 // @route /api/users
 // @access public
 const registerUser = (req, res) => {
-  console.log(req.body);
+  const { name, email, password } = req.body;
+
+  // Validation
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Please include all fields ' });
+  }
 
   res.send('Register Route');
 };
