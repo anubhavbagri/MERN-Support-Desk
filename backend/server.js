@@ -5,6 +5,10 @@ const PORT = process.env.PORT || 5000;
 // Initialize app variable
 const app = express();
 
+// body parser middleware which will allow us to send raw json
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Welcome to the Support Desk API' });
 });
