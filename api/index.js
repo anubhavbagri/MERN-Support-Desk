@@ -19,7 +19,12 @@ app.use(async (req, res, next) => {
     await connectDB();
     next();
   } catch (error) {
-    res.status(500).json({ message: 'Database connection failed' });
+    console.error('Database connection error:', error.message);
+    res.status(500).json({ 
+      message: 'Database connection failed',
+      error: process.env.NODE_ENV === 'production' ? undefined : error.message,
+      envCheck: process.env.MONGO_URI ? 'MONGO_URI is set' : 'MONGO_URI is NOT set'
+    });
   }
 });
 
