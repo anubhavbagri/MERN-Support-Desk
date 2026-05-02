@@ -1,28 +1,41 @@
 const mongoose = require('mongoose');
 
-let cachedConnection = null;
+// Cache the connection promise, not the connection itself
+let connectionPromise = null;
 
 const connectDB = async () => {
-  // Return cached connection if available (important for serverless)
-  if (cachedConnection && mongoose.connection.readyState === 1) {
-    return cachedConnection;
+  // If already connected, return immediately
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  // If a connection attempt is already in progress, reuse it
+  if (connectionPromise) {
+    return connectionPromise;
   }
 
   if (!process.env.MONGO_URI) {
     throw new Error('MONGO_URI environment variable is not set');
   }
 
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      bufferCommands: false,
+  // Store the promise so concurrent requests reuse it
+  connectionPromise = mongoose
+    .connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 10000,
+    })
+    .then((conn) => {
+      console.log(`MongoDB connected: ${conn.connection.host}`);
+      return conn;
+    })
+    .catch((err) => {
+      // Reset so next request can try again
+      connectionPromise = null;
+      console.error(`MongoDB connection error: ${err.message}`);
+      throw err;
     });
-    cachedConnection = conn;
-    console.log(`MongoDB connected: ${conn.connection.host}`);
-    return conn;
-  } catch (err) {
-    console.log(`Error: ${err.message}`);
-    throw err;
-  }
+
+  return connectionPromise;
 };
 
 module.exports = connectDB;
